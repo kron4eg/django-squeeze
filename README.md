@@ -15,14 +15,28 @@ In template
 
     {% load squeeze_tags %}
 
+
 CSS minification
 ----------------
 
-    {% css_squeeze "css/dynamic_minifyed.css" "css/style1.css,css/style2.css" %} will produce MEDIA_ROOT/css/dynamic_minifyed.css
+    {% css_squeeze "css/dynamic_minifyed.css" "css/style1.css,css/style2.css" %}
+
+Will write MEDIA_ROOT/css/dynamic_minifyed.css file and return (assumed "/static/" is you MEDIA_URL)
+
+    <link href="/static/css/dynamic_minifyed.css" rel="stylesheet" type="text/css" media="screen" />
+
 
 JavaScript minification
 -----------------------
 
-    {% js_squeeze "js/dynamic_minifyed.js" "js/script1.js,js/script2.js" %} will produce MEDIA_ROOT/js/dynamic_minifyed.js
+    {% js_squeeze "js/dynamic_minifyed.js" "js/script1.js,js/script2.js" %}
 
-those files will regenerate every project reload
+Will write MEDIA_ROOT/js/dynamic_minifyed.js and return (assumed "/static/" is you MEDIA_URL)
+
+    <script type="text/javascript" src="/static/js/dynamic_minifyed.js"></script>
+
+
+Reganeration
+------------
+
+Those files will regenerate 1 time every project's reload
