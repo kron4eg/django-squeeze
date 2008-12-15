@@ -1,3 +1,13 @@
+Installation
+============
+
+Put it somewhere in PYTHONPATH, and make it appear in INSTALLED_APPS in settings
+
+    INSTALLED_APPS += (
+        'squeeze',
+    )
+
+
 Usage
 =====
 
