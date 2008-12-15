@@ -39,4 +39,4 @@ Will write MEDIA_ROOT/js/dynamic_minifyed.js and return (assumed "/static/" is y
 Reganeration
 ------------
 
-Those files will regenerate 1 time every project's reload
+Those files will be regenerated every time project reloads
