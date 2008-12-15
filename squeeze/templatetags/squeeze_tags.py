@@ -41,7 +41,7 @@ class SqueezeNode(template.Node):
             tmp = open(f, 'rb').read()
             buf.write(tmp)
         buf.seek(0)
-        res = open(result_file, 'w+')
+        res = open(result_file, 'w')
         minifyer.minify(buf, res)
         res.close()
         SQUEEZE_CACHE[self.result_file] = tpl % urljoin(settings.MEDIA_URL, resolve_variable(self.result_file, context))
@@ -68,5 +68,7 @@ def js_squeeze(parser, token):
     will produce MEDIA_ROOT/js/dynamic_minifyed.js
     """
     bits = token.split_contents()
+    if len(bits) != 3:
+        raise template.TemplateSyntaxError, "%r tag requires exactly two arguments" % bits[0]
     return SqueezeNode('js', *bits[1:])
 
