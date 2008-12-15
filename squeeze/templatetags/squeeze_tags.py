@@ -12,28 +12,31 @@ from django.template import resolve_variable
 
 import squeeze
 
+
 register = template.Library()
 SQUEEZE_CACHE = {}
 
-
 class SqueezeNode(template.Node):
-    def __init__(self, ftype, result_file, files):
+    def __init__(self, ftype, result_file, files, media=None):
         self.ftype = ftype
         self.result_file = result_file
         self.files = files
+        self.media = media
 
     def render(self, context):
         try:
             return SQUEEZE_CACHE[self.result_file]
         except KeyError:
             pass
-        result_file = path.join(settings.MEDIA_ROOT, resolve_variable(self.result_file, context))
+        result_file = path.join(settings.MEDIA_ROOT,
+                resolve_variable(self.result_file, context))
+        media = self.media and resolve_variable(self.media) or u'screen'
         if self.ftype == 'css':
             minifyer = squeeze.CSSMinify()
-            tpl = '<link href="%s" rel="stylesheet" type="text/css" media="screen" />'
+            tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
         else:
             minifyer = squeeze.JavascriptMinify()
-            tpl = '<script type="text/javascript" src="%s"></script>'
+            tpl = u'<script type="text/javascript" src="%s"></script>'
         files = resolve_variable(self.files, context)
         files = [path.join(settings.MEDIA_ROOT, x) for x in files.split(',')]
         buf = StringIO()
@@ -44,7 +47,9 @@ class SqueezeNode(template.Node):
         res = open(result_file, 'w')
         minifyer.minify(buf, res)
         res.close()
-        SQUEEZE_CACHE[self.result_file] = tpl % urljoin(settings.MEDIA_URL, resolve_variable(self.result_file, context))
+        url = urljoin(settings.MEDIA_URL,
+                resolve_variable(self.result_file, context))
+        SQUEEZE_CACHE[self.result_file] = tpl % url
         return SQUEEZE_CACHE[self.result_file]
 
 
@@ -54,10 +59,11 @@ def css_squeeze(parser, token):
     """
     {% css_squeeze "css/dynamic_minifyed.css" "css/style1.css,css/style2.css" %}
     will produce MEDIA_ROOT/css/dynamic_minifyed.css
+    {% css_squeeze "css/dynamic_minifyed.css" "css/style1.css,css/style2.css" "screen,print" %}
     """
     bits = token.split_contents()
-    if len(bits) != 3:
-        raise template.TemplateSyntaxError, "%r tag requires exactly two argument" % bits[0]
+    if len(bits) not in [3, 4]:
+        raise template.TemplateSyntaxError, "%r tag requires two or tree arguments" % bits[0]
     return SqueezeNode('css', *bits[1:])
 
 
