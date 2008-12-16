@@ -30,7 +30,7 @@ class SqueezeNode(template.Node):
             pass
         result_file = path.join(settings.MEDIA_ROOT,
                 resolve_variable(self.result_file, context))
-        media = self.media and resolve_variable(self.media) or u'screen'
+        media = self.media and resolve_variable(self.media, context) or u'screen'
         if self.ftype == 'css':
             minifyer = squeeze.CSSMinify()
             tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
