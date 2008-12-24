@@ -1,7 +1,7 @@
 Installation
 ============
 
-Put squeeze somewhere in PYTHONPATH, and make it appear in INSTALLED_APPS in settings.
+Put `squeeze` somewhere in `PYTHONPATH`, and make it appear in `INSTALLED_APPS` in settings.
 
     INSTALLED_APPS += (
         'squeeze',
@@ -25,7 +25,7 @@ Will write minified
 
     {{ MEDIA_ROOT }}css/dynamic_minifyed.css
 
-file and return (assumed "/static/" is you MEDIA_URL)
+file and return (assumed "/static/" is you `settings.MEDIA_URL`)
 
     <link href="/static/css/dynamic_minifyed.css" rel="stylesheet" type="text/css" media="screen" />
 
@@ -39,7 +39,7 @@ Will write minified
 
     {{ MEDIA_ROOT }}js/dynamic_minifyed.js
 
-and return (assumed "/static/" is you MEDIA_URL)
+and return (assumed "/static/" is you `settings.MEDIA_URL`)
 
     <script type="text/javascript" src="/static/js/dynamic_minifyed.js"></script>
 
