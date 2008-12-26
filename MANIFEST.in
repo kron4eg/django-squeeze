@@ -1,0 +1,2 @@
+include AUTHORS LICENSE CHANGELOG README.md
+include setup.cfg
