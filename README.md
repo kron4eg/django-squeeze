@@ -47,4 +47,4 @@ and return (assumed "/static/" is you `settings.MEDIA_URL`)
 Regeneration
 ------------
 
-Those files will be regenerated every time project reloads
+Those files will be regenerated only in case original files changed.

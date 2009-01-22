@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from os import path
+from os.path import join, exists, getmtime, normpath
+from time import localtime, strftime
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -14,7 +16,11 @@ import squeeze
 
 
 register = template.Library()
-SQUEEZE_CACHE = {}
+
+def gettime(filename):
+    time = localtime(getmtime(filename))
+    return strftime('%Y%m%d%H%M', time)
+
 
 class SqueezeNode(template.Node):
     def __init__(self, ftype, result_file, files, media=None):
@@ -24,12 +30,19 @@ class SqueezeNode(template.Node):
         self.media = media
 
     def render(self, context):
-        try:
-            return SQUEEZE_CACHE[self.result_file]
-        except KeyError:
-            pass
-        result_file = path.join(settings.MEDIA_ROOT,
-                resolve_variable(self.result_file, context))
+        def generate(result_file, files, minifyer):
+            buf = StringIO()
+            for f in files:
+                tmp = open(f, 'rb').read()
+                buf.write(tmp)
+            buf.seek(0)
+            res = open(result_file, 'w')
+            minifyer.minify(buf, res)
+            res.close()
+
+        result_file = normpath(join(settings.MEDIA_ROOT,
+                resolve_variable(self.result_file, context)))
+        last_write_time = exists(result_file) and gettime(result_file) or '0'
         media = self.media and resolve_variable(self.media, context) or u'screen'
         if self.ftype == 'css':
             minifyer = squeeze.CSSMinify()
@@ -37,21 +50,25 @@ class SqueezeNode(template.Node):
         else:
             minifyer = squeeze.JavascriptMinify()
             tpl = u'<script type="text/javascript" src="%s"></script>'
-        files = resolve_variable(self.files, context)
-        files = [path.join(settings.MEDIA_ROOT, x) for x in files.split(',')]
-        buf = StringIO()
-        for f in files:
-            tmp = open(f, 'rb').read()
-            buf.write(tmp)
-        buf.seek(0)
-        res = open(result_file, 'w')
-        minifyer.minify(buf, res)
-        res.close()
         url = urljoin(settings.MEDIA_URL,
                 resolve_variable(self.result_file, context))
-        SQUEEZE_CACHE[self.result_file] = tpl % url
-        return SQUEEZE_CACHE[self.result_file]
+        files = resolve_variable(self.files, context)
+        files = [normpath(join(settings.MEDIA_ROOT, x)) for x in files.split(',')]
+        need_regeneration = False
+        if exists(result_file):
+            for f in files:
+                if not exists(f):
+                    raise template.TemplateSyntaxError, "%s file doesn't exists" % f
+                if last_write_time < gettime(f):
+                    need_regeneration = True
+        else:
+            need_regeneration = True
 
+        if need_regeneration:
+            generate(result_file, files, minifyer)
+        last_write_time = last_write_time == '0' and gettime(result_file) or last_write_time
+        return_tag = tpl % ('%s?%s' % (url, last_write_time))
+        return return_tag
 
 
 @register.tag
