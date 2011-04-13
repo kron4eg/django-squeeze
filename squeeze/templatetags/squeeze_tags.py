@@ -11,6 +11,7 @@ from urlparse import urljoin
 from django import template
 from django.conf import settings
 from django.template import resolve_variable
+from django.contrib.sites.models import Site
 
 import squeeze
 
@@ -23,40 +24,38 @@ def gettime(filename):
 
 
 class SqueezeNode(template.Node):
-    def __init__(self, ftype, result_file, files, media=None):
+    def __init__(self, ftype, result_file, files, additional=None):
         self.ftype = ftype
         self.result_file = result_file
         self.files = files
-        self.media = media
+        self.additional = additional
 
     def render(self, context):
         def generate(result_file, files, minifyer):
-            buf = StringIO()
-            for f in files:
-                tmp = open(f, 'rb').read()
-                buf.write(tmp)
-            buf.seek(0)
+            if minifyer.__class__.__name__ == 'JSMinify_GClosure':
+                src = files
+            else:
+                src = StringIO()
+                for f in files:
+                    tmp = open(f, 'rb').read()
+                    src.write(tmp)
+                src.seek(0)
             res = open(result_file, 'w')
-            minifyer.minify(buf, res)
+            minifyer.minify(src, res)
             res.close()
 
         result_file = normpath(join(settings.MEDIA_ROOT,
                 resolve_variable(self.result_file, context)))
-        last_write_time = exists(result_file) and gettime(result_file) or '0'
-        media = self.media and resolve_variable(self.media, context) or u'screen'
-        if self.ftype == 'css':
-            minifyer = squeeze.CSSMinify()
-            tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
-        else:
-            minifyer = squeeze.JavascriptMinify()
-            tpl = u'<script type="text/javascript" src="%s"></script>'
         url = urljoin(settings.MEDIA_URL,
                 resolve_variable(self.result_file, context))
-        files = resolve_variable(self.files, context)
-        files = [normpath(join(settings.MEDIA_ROOT, x)) for x in files.split(',')]
+        last_write_time = exists(result_file) and gettime(result_file) or '0'
+
+        files = resolve_variable(self.files, context).split(',')
+        fs_files = [normpath(join(settings.MEDIA_ROOT, x)) for x in files]
+
         need_regeneration = False
         if exists(result_file):
-            for f in files:
+            for f in fs_files:
                 if not exists(f):
                     raise template.TemplateSyntaxError, "%s file doesn't exists" % f
                 if last_write_time < gettime(f):
@@ -64,6 +63,23 @@ class SqueezeNode(template.Node):
         else:
             need_regeneration = True
 
+        js_tpl = u'<script type="text/javascript" src="%s"></script>'
+        if self.ftype == 'js_gclosure':
+            minifyer = squeeze.JSMinify_GClosure(self.additional)
+            full_media_path = urljoin('http://%s/' %
+                (context['request'].get_host()), settings.MEDIA_URL)
+            files = [urljoin(full_media_path, x) for x in files]
+            tpl = js_tpl
+        else:
+            files = fs_files
+            if self.ftype == 'css':
+                media = self.additional and resolve_variable(self.additional, context) or u'screen'
+                minifyer = squeeze.CSSMinify()
+                tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
+
+            else:
+                minifyer = squeeze.JavascriptMinify()
+                tpl = js_tpl
         if need_regeneration:
             generate(result_file, files, minifyer)
         last_write_time = last_write_time == '0' and gettime(result_file) or last_write_time
@@ -80,7 +96,7 @@ def css_squeeze(parser, token):
     """
     bits = token.split_contents()
     if len(bits) not in [3, 4]:
-        raise template.TemplateSyntaxError, "%r tag requires two or tree arguments" % bits[0]
+        raise template.TemplateSyntaxError, "%r tag requires two or three arguments" % bits[0]
     return SqueezeNode('css', *bits[1:])
 
 
@@ -95,3 +111,15 @@ def js_squeeze(parser, token):
         raise template.TemplateSyntaxError, "%r tag requires exactly two arguments" % bits[0]
     return SqueezeNode('js', *bits[1:])
 
+@register.tag()
+def js_gclosure(parser, token):
+    """
+    {% js_gclosure "js/dynamic_minifyed.js" "js/script1.js,js/script2.js" %}
+    will produce MEDIA_ROOT/js/dynamic_minifyed.js
+    {% js_gclosure "js/dynamic_minifyed.js" "js/script1.js,js/script2.js"
+    "SIMPLE_OPTIMIZATIONS||WHITESPACE_ONLY||ADVANSED_OPTIMIZATIONS"%}
+    """
+    bits = token.split_contents()
+    if len(bits) not in [3, 4]:
+        raise template.TemplateSyntaxError, "%r tag requires two or three arguments" % bits[0]
+    return SqueezeNode('js_gclosure', *bits[1:])
