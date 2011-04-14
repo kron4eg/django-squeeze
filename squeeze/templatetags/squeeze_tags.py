@@ -65,10 +65,13 @@ class SqueezeNode(template.Node):
 
         js_tpl = u'<script type="text/javascript" src="%s"></script>'
         if self.ftype == 'js_gclosure':
-            minifyer = squeeze.JSMinify_GClosure(self.additional)
-            full_media_path = urljoin('http://%s/' %
+            compress_level = self.additional and \
+                resolve_variable(self.additional, context) or "SIMPLE_OPTIMIZATIONS"
+            minifyer = squeeze.JSMinify_GClosure(compress_level)
+            full_media_path = urljoin(u'http://%s/' %
                 (context['request'].get_host()), settings.MEDIA_URL)
-            files = [urljoin(full_media_path, x) for x in files]
+            # We need to prevent caching
+            files = ['%s?%s' % (urljoin(full_media_path, x), last_write_time) for x in files]
             tpl = js_tpl
         else:
             files = fs_files

@@ -1,10 +1,16 @@
 Installation
 ============
 
-Put `squeeze` somewhere in `PYTHONPATH`, and make it appear in `INSTALLED_APPS` in settings.
+Put `squeeze` somewhere in `PYTHONPATH`, make it appear in `INSTALLED_APPS` in settings
 
     INSTALLED_APPS += (
         'squeeze',
+    )
+
+and add `django.core.context_processors.request` to your `TEMPLATE_CONTEXT_PROCESSORS`:
+    
+    TEMPLATE_CONTEXT_PROCESSORS += (
+        'django.core.context_processors.request',
     )
 
 
@@ -43,6 +49,25 @@ and return (assumed "/static/" is you `settings.MEDIA_URL`)
 
     <script type="text/javascript" src="/static/js/dynamic_minifyed.js"></script>
 
+
+JavaScript minification using Google Closure Compiler REST API
+--------------------------------------------------------------
+
+    {% js_gclosure "js/dynamic_minifyed_closure.js" "js/script1.js,js/script2.js" %}
+
+Will write minified
+
+    {{ MEDIA_ROOT }}js/dynamic_minifyed_closure.js
+
+and return (assumed "/static" is you `settings.MEDIA_URL`)
+
+    <script type="text/javascript" src="/static/js/dynamic_minifyed_closure.js"></script>
+
+As additional parameter, you can put compression level string in Closure API terms just like:
+
+    {% js_gclosure "js/dynamic_minifyed_closure.js" "js/script1.js,js/script2.js" "WHITESPACE_ONLY" %}
+
+Default compression level is "SIMPLE_OPTIMIZATIONS"
 
 Regeneration
 ------------

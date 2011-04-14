@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import httplib, urllib, sys
+import urllib, urllib2, sys
 
 class JSMinify_GClosure(object):
     # TODO: add error's and warning's handling
-    def __init__(self, compilation_level):
+    def __init__(self, compilation_level="SIMPLE_OPTIMIZATIONS"):
         self.params = [
-            ('compilation_level', (compilation_level and compilation_level or "SIMPLE_OPTIMIZATIONS")),
+            ('compilation_level', compilation_level),
             ('output_format', 'text'),
             ('output_info', 'compiled_code'),
         ]
@@ -16,11 +16,9 @@ class JSMinify_GClosure(object):
     def minify(self, files, outstream):
         self.params.extend([('code_url', file) for file in files])
         params = urllib.urlencode(self.params)
-        conn = httplib.HTTPConnection('closure-compiler.appspot.com')
-        conn.request('POST', '/compile', params, self.headers)
-        response = conn.getresponse()
-        outstream.write(response.read());
-        conn.close()
+        req = urllib2.Request('http://closure-compiler.appspot.com/compile', params, self.headers)
+        data = urllib2.urlopen(req).read()
+        outstream.write(data)
 
 if __name__ == '__main__':
     gclos = JSMinify_GClosure()
