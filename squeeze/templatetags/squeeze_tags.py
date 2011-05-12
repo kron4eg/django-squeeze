@@ -32,16 +32,25 @@ class SqueezeNode(template.Node):
 
     def render(self, context):
         def generate(result_file, files, minifyer):
-            if minifyer.__class__.__name__ == 'JSMinify_GClosure':
-                src = files
-            else:
+            def concat_files(files):
                 src = StringIO()
                 for f in files:
                     tmp = open(f, 'rb').read()
                     src.write(tmp)
                 src.seek(0)
+                return src
+
             res = open(result_file, 'w')
-            minifyer.minify(src, res)
+            if minifyer.__class__.__name__ == 'JSMinify_GClosure':
+                src = files[0]
+                try:
+                    minifyer.minify(src, res)
+                except IOError:
+                    src = concat_files(files[1]).read()
+                    res.write(src)
+            else:
+                src = concat_files(files)
+                minifyer.minify(src, res)
             res.close()
 
         result_file = normpath(join(settings.MEDIA_ROOT,
@@ -60,31 +69,34 @@ class SqueezeNode(template.Node):
                     raise template.TemplateSyntaxError, "%s file doesn't exists" % f
                 if last_write_time < gettime(f):
                     need_regeneration = True
+                    break
         else:
             need_regeneration = True
 
-        js_tpl = u'<script type="text/javascript" src="%s"></script>'
-        if self.ftype == 'js_gclosure':
-            compress_level = self.additional and \
-                resolve_variable(self.additional, context) or "SIMPLE_OPTIMIZATIONS"
-            minifyer = squeeze.JSMinify_GClosure(compress_level)
-            full_media_path = urljoin(u'http://%s/' %
-                (context['request'].get_host()), settings.MEDIA_URL)
-            # We need to prevent caching
-            files = ['%s?%s' % (urljoin(full_media_path, x), last_write_time) for x in files]
-            tpl = js_tpl
-        else:
-            files = fs_files
-            if self.ftype == 'css':
-                media = self.additional and resolve_variable(self.additional, context) or u'screen'
-                minifyer = squeeze.CSSMinify()
-                tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
+        if self.ftype in ('js_gclosure', 'js'):
+            tpl = u'<script type="text/javascript" src="%s"></script>'
+        else: # this is css
+            media = self.additional and resolve_variable(self.additional, context) or u'screen'
+            tpl = u'<link href="%s" rel="stylesheet" type="text/css" media="' + media + '" />'
 
-            else:
-                minifyer = squeeze.JavascriptMinify()
-                tpl = js_tpl
         if need_regeneration:
+            if self.ftype == 'js_gclosure':
+                compress_level = self.additional and \
+                    resolve_variable(self.additional, context) or "SIMPLE_OPTIMIZATIONS"
+                minifyer = squeeze.JSMinify_GClosure(compress_level)
+                full_media_path = urljoin(u'http://%s/' %
+                    (context['request'].get_host()), settings.MEDIA_URL)
+                # We need to prevent caching
+                files = [['%s?%s' % (urljoin(full_media_path, x), last_write_time) for x in files], fs_files]
+            else:
+                files = fs_files
+                if self.ftype == 'js':
+                    minifyer = squeeze.JavascriptMinify()
+                else: # this is css
+                    minifyer = squeeze.CSSMinify()
+
             generate(result_file, files, minifyer)
+
         last_write_time = last_write_time == '0' and gettime(result_file) or last_write_time
         return_tag = tpl % ('%s?%s' % (url, last_write_time))
         return return_tag
@@ -101,7 +113,6 @@ def css_squeeze(parser, token):
     if len(bits) not in [3, 4]:
         raise template.TemplateSyntaxError, "%r tag requires two or three arguments" % bits[0]
     return SqueezeNode('css', *bits[1:])
-
 
 @register.tag
 def js_squeeze(parser, token):
