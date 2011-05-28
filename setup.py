@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name = "django-squeeze-gclosure",
-      version = '0.1',
+      version = '0.2',
       author = "Pavel Puchkin",
       author_email = "neoascetic@gmail.com",
       url = "http://github.com/neoascetic/django-squeeze-gclosure",
