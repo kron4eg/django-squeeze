@@ -4,7 +4,8 @@
 import urllib, urllib2, json
 
 class JSMinify_GClosure(object):
-    def __init__(self, compilation_level="SIMPLE_OPTIMIZATIONS"):
+    def __init__(self, compilation_level):
+        compilation_level = compilation_level and compilation_level or 'SIMPLE_OPTIMIZATIONS'
         self.params = [
             ('compilation_level', compilation_level),
             ('output_format', 'json'),
@@ -38,11 +39,12 @@ if __name__ == '__main__':
 
     usage = 'usage: %prog [options] file1 file2 http://example.com/file3 outfile'
     parser = OptionParser(usage=usage)
-    parser.add_option('-l', action='store', dest='compilation_level', help='compilation level, default SIMPLE_OPTIMIZATIONS')
-    parser.add_option('-p', action='store', dest='url', help='this prefix will be added to each non-URL path to file')
+    parser.add_option('-l', action='store', dest='compilation_level',
+        help='compilation level, default SIMPLE_OPTIMIZATIONS')
+    parser.add_option('-u', action='store', dest='url', help='this prefix will be added to each non-URL path to file')
     (opts, args) = parser.parse_args()
 
-    gclos = JSMinify_GClosure(opts.compilation_level)
+    gclos = JSMinify_GClosure(opts.compilation_level and opts.compilation_level)
     files = [urlparse.urljoin(opts.url, file) for file in args[:-1]]
     output = args[-1]
 
