@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib, urllib2, json
+import urllib, urllib2, json, sys
 
 class JSMinify_GClosure(object):
     def __init__(self, compilation_level):
@@ -21,23 +21,26 @@ class JSMinify_GClosure(object):
         req = urllib2.Request('http://closure-compiler.appspot.com/compile', params, self.headers)
         conn = urllib2.urlopen(req)
         data = json.loads(conn.read())
-        print 'Warnings:'
-        print json.dumps(data.get('warnings'), sort_keys=True, indent=4)
+
+        log = sys.stderr
+        print >>log, 'Warnings:'
+        print >>log, json.dumps(data.get('warnings'), sort_keys=True, indent=4)
         if 'serverErrors' in data or 'errors' in data:
-            print 'Server Errors:'
-            print json.dumps(data.get('serverErrors'), sort_keys=True, indent=4)
-            print 'Compiling Errors:'
-            print json.dumps(data.get('errors'), sort_keys=True, indent=4)
+            print >>log, 'Server Errors:'
+            print >>log, json.dumps(data.get('serverErrors'), sort_keys=True, indent=4)
+            print >>log, 'Compiling Errors:'
+            print >>log, json.dumps(data.get('errors'), sort_keys=True, indent=4)
             raise IOError('Errors while compiling')
         else:
             outstream.write(data['compiledCode'])
+            outstream.write('\n')
         conn.close()
 
 if __name__ == '__main__':
-    import sys, urlparse
+    import urlparse
     from optparse import OptionParser
 
-    usage = 'usage: %prog [options] file1 file2 http://example.com/file3 outfile'
+    usage = 'usage: %prog [options] file1 file2 http://example.com/file3'
     parser = OptionParser(usage=usage)
     parser.add_option('-l', action='store', dest='compilation_level',
         help='compilation level, default SIMPLE_OPTIMIZATIONS')
@@ -45,9 +48,6 @@ if __name__ == '__main__':
     (opts, args) = parser.parse_args()
 
     gclos = JSMinify_GClosure(opts.compilation_level and opts.compilation_level)
-    files = [urlparse.urljoin(opts.url, file) for file in args[:-1]]
-    output = args[-1]
+    files = [urlparse.urljoin(opts.url, file) for file in args]
 
-    result = open(output, 'w')
-    gclos.minify(files, result)
-    result.close()
+    gclos.minify(files, sys.stdout)
