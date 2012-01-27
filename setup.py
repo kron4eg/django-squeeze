@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 from distutils.core import setup
 
-setup(name = "django-squeeze-gclosure",
+setup(name = "django-squeeze",
       version = '0.2',
       author = "Pavel Puchkin, Artiom Diomin",
       author_email = "neoascetic@gmail.com, kron82@gmail.com",
       url = "http://github.com/kron4eg/django-squeeze",
       license = "BSD",
       description = "Squeeze CSS and JS (using Crockford algorithm or Google Closure REST API) files on the fly, for django.",
-      packages = ['gcsqueeze', 'gcsqueeze.templatetags'],
+      packages = ['squeeze', 'squeeze.templatetags'],
       platforms = ['any'],
       classifiers = [
           'Development Status :: 4 - Beta',
