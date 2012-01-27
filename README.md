@@ -29,9 +29,9 @@ CSS minification
 
 Will write minified
 
-    {{ MEDIA_ROOT }}css/dynamic_minifyed.css
+    {{ STATIC_ROOT }}css/dynamic_minifyed.css
 
-file and return (assumed "/static/" is you `settings.MEDIA_URL`)
+file and return (assumed "/static/" is you `settings.STATIC_URL`)
 
     <link href="/static/css/dynamic_minifyed.css" rel="stylesheet" type="text/css" media="screen" />
 
@@ -43,9 +43,9 @@ JavaScript minification
 
 Will write minified
 
-    {{ MEDIA_ROOT }}js/dynamic_minifyed.js
+    {{ STATIC_ROOT }}js/dynamic_minifyed.js
 
-and return (assumed "/static/" is you `settings.MEDIA_URL`)
+and return (assumed "/static/" is you `settings.STATIC_URL`)
 
     <script type="text/javascript" src="/static/js/dynamic_minifyed.js"></script>
 
@@ -57,9 +57,9 @@ JavaScript minification using Google Closure Compiler REST API
 
 Will write minified
 
-    {{ MEDIA_ROOT }}js/dynamic_minifyed_closure.js
+    {{ STATIC_ROOT }}js/dynamic_minifyed_closure.js
 
-and return (assumed "/static" is you `settings.MEDIA_URL`)
+and return (assumed "/static" is you `settings.STATIC_URL`)
 
     <script type="text/javascript" src="/static/js/dynamic_minifyed_closure.js"></script>
 
